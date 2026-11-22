@@ -1,0 +1,1082 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Control Center | FoodRescue AI</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: #071510;
+            color: #e8f5ed;
+            font-family: Arial, sans-serif;
+        }
+
+        .admin-layout { display: flex; min-height: 100vh; }
+
+        .sidebar {
+            width: 245px;
+            background: #0b1f17;
+            border-right: 1px solid rgba(75,220,135,.12);
+            padding: 28px 18px;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .brand {
+            color: #4ade80;
+            font-size: 23px;
+            font-weight: 800;
+            margin-bottom: 40px;
+        }
+
+        .brand span { color: #fff; }
+
+        .admin-label {
+            color: #82998b;
+            font-size: 11px;
+            letter-spacing: 2px;
+            margin: 25px 10px 12px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            text-decoration: none;
+            color: #b6c9bd;
+            padding: 13px 14px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            font-size: 14px;
+            transition: .25s;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(34,197,94,.13);
+            color: #4ade80;
+        }
+
+        .notification-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 21px;
+            height: 21px;
+            padding: 0 6px;
+            border-radius: 20px;
+            background: #22c55e;
+            color: #06130b;
+            font-size: 11px;
+            font-weight: 800;
+            box-shadow: 0 0 12px rgba(34,197,94,.35);
+        }
+
+        .logout-link { color: #f87171; }
+
+        .main-content {
+            margin-left: 245px;
+            width: calc(100% - 245px);
+            padding: 35px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 35px;
+            flex-wrap: wrap;
+        }
+
+        .topbar h1 { font-size: 28px; margin: 0 0 8px; }
+
+        .muted { color: #8da497; font-size: 13px; }
+
+        .admin-profile {
+            background: #122b20;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid #254b36;
+            color: #4ade80;
+        }
+
+        .section-title { font-size: 19px; margin: 35px 0 18px; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .stat-card {
+            background: linear-gradient(145deg, #122b20, #0c1e16);
+            border: 1px solid rgba(74,222,128,.16);
+            border-radius: 16px;
+            padding: 23px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.15);
+        }
+
+        .stat-card p {
+            color: #91a99a;
+            font-size: 13px;
+            margin: 0 0 13px;
+        }
+
+        .stat-card h2 {
+            color: #4ade80;
+            font-size: 30px;
+            margin: 0;
+        }
+
+        .stat-card small {
+            display: block;
+            margin-top: 10px;
+            color: #91a99a;
+        }
+
+        .content-card {
+            background: #0c2017;
+            border: 1px solid rgba(74,222,128,.13);
+            border-radius: 16px;
+            padding: 22px;
+            margin-bottom: 25px;
+        }
+
+        .table-wrapper { width: 100%; overflow-x: auto; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 650px;
+        }
+
+        th {
+            text-align: left;
+            color: #81a18d;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 15px 12px;
+            border-bottom: 1px solid #254333;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 15px 12px;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+            font-size: 13px;
+            color: #d4e5d9;
+            vertical-align: middle;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            background: rgba(74,222,128,.12);
+            color: #4ade80;
+            white-space: nowrap;
+        }
+
+        .warning {
+            background: rgba(250,204,21,.12);
+            color: #facc15;
+        }
+
+        .danger {
+            background: rgba(248,113,113,.12);
+            color: #f87171;
+        }
+
+        .assign-form,
+        .management-form {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        select {
+            background: #142c20;
+            color: #e8f5ed;
+            border: 1px solid #31553d;
+            padding: 9px;
+            border-radius: 8px;
+            outline: none;
+            min-width: 130px;
+        }
+
+        button {
+            background: #22c55e;
+            border: none;
+            color: #06130b;
+            padding: 9px 13px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: .2s;
+            white-space: nowrap;
+        }
+
+        button:hover { background: #4ade80; }
+
+        .secondary-button {
+            background: #284536;
+            color: #d9f5e2;
+        }
+
+        .secondary-button:hover { background: #376348; }
+
+        .danger-button {
+            background: #7f2525;
+            color: #fff;
+        }
+
+        .danger-button:hover { background: #b83232; }
+
+        .empty-state {
+            text-align: center;
+            padding: 28px;
+            color: #82998b;
+            font-size: 13px;
+        }
+
+        .chart-container { height: 280px; position: relative; }
+
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 20px;
+        }
+
+        .quick-links { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        .quick-link {
+            text-decoration: none;
+            background: #142c20;
+            border: 1px solid #31553d;
+            color: #4ade80;
+            padding: 12px 17px;
+            border-radius: 10px;
+            font-size: 13px;
+        }
+
+        .quick-link:hover { background: #1b3b2a; }
+
+        .management-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 220px;
+        }
+
+        .management-actions form { margin: 0; }
+
+        .management-actions button { font-size: 11px; }
+
+        .management-actions select { font-size: 11px; }
+
+        .account-protected {
+            color: #8da497;
+            font-size: 12px;
+        }
+
+        .notice {
+            padding: 13px 16px;
+            background: rgba(74,222,128,.08);
+            border: 1px solid rgba(74,222,128,.18);
+            border-radius: 10px;
+            color: #a7d8b7;
+            font-size: 13px;
+            margin-bottom: 18px;
+        }
+
+        @media (max-width: 1100px) {
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+
+        @media (max-width: 750px) {
+            .admin-layout { display: block; }
+
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+
+            .main-content {
+                margin-left: 0;
+                width: 100%;
+                padding: 20px;
+            }
+
+            .chart-grid { grid-template-columns: 1fr; }
+
+            .topbar h1 { font-size: 23px; }
+        }
+
+        @media (max-width: 420px) {
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="admin-layout">
+
+    <aside class="sidebar">
+
+        <div class="brand">FoodRescue <span>AI</span></div>
+
+        <div class="admin-label">ADMINISTRATION</div>
+
+        <a href="#overview" class="nav-link active">Overview</a>
+        <a href="#users" class="nav-link">User Management</a>
+        <a href="#donations" class="nav-link">Donations</a>
+        <a href="#deliveries" class="nav-link">Deliveries</a>
+        <a href="#analytics" class="nav-link">Analytics</a>
+
+        <div class="admin-label">PLATFORM</div>
+
+        <a href="{{ url_for('ai_insights') }}" class="nav-link">AI Insights</a>
+
+        <!-- ADMIN NOTIFICATIONS -->
+
+        <a href="{{ url_for('notifications') }}" class="nav-link">
+            <span>Notifications</span>
+
+            {% if unread_notification_count > 0 %}
+                <span class="notification-count">
+                    {{ unread_notification_count }}
+                </span>
+            {% endif %}
+        </a>
+
+        <a href="{{ url_for('dashboard') }}" class="nav-link">User Dashboard</a>
+        <a href="{{ url_for('auth.logout') }}" class="nav-link logout-link">Logout</a>
+
+    </aside>
+
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <h1>Admin Control Center</h1>
+                <p class="muted">Monitor and manage the FoodRescue AI platform.</p>
+            </div>
+
+            <div class="admin-profile">Administrator</div>
+        </header>
+
+
+        <!-- OVERVIEW -->
+
+        <section id="overview">
+
+            <h2 class="section-title">Platform Overview</h2>
+
+            <div class="stats-grid">
+
+                <div class="stat-card">
+                    <p>Total Registered Users</p>
+                    <h2>{{ total_users }}</h2>
+                    <small>All platform accounts</small>
+                </div>
+
+                <div class="stat-card">
+                    <p>Total Food Donations</p>
+                    <h2>{{ total_donations }}</h2>
+                    <small>All submitted donations</small>
+                </div>
+
+                <div class="stat-card">
+                    <p>Food Successfully Rescued</p>
+                    <h2>{{ total_food_rescued }} kg</h2>
+                    <small>Completed donations</small>
+                </div>
+
+                <div class="stat-card">
+                    <p>Delivery Partners</p>
+                    <h2>{{ delivery_partners|length }}</h2>
+                    <small>Active delivery partners</small>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- USER ACCOUNT STATISTICS -->
+
+        <section>
+
+            <h2 class="section-title">Account Statistics</h2>
+
+            <div class="stats-grid">
+
+                <div class="stat-card">
+                    <p>Active Accounts</p>
+                    <h2>{{ active_users }}</h2>
+                    <small>Accounts allowed to access the platform</small>
+                </div>
+
+                <div class="stat-card">
+                    <p>Deactivated Accounts</p>
+                    <h2>{{ inactive_users }}</h2>
+                    <small>Accounts currently restricted</small>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- DONATION STATISTICS -->
+
+        <section>
+
+            <h2 class="section-title">Donation Statistics</h2>
+
+            <div class="stats-grid">
+
+                <div class="stat-card">
+                    <p>Available Donations</p>
+                    <h2>{{ available_donations }}</h2>
+                </div>
+
+                <div class="stat-card">
+                    <p>Claimed Donations</p>
+                    <h2>{{ claimed_donations }}</h2>
+                </div>
+
+                <div class="stat-card">
+                    <p>Completed Donations</p>
+                    <h2>{{ completed_donations }}</h2>
+                </div>
+
+                <div class="stat-card">
+                    <p>Food Rescued</p>
+                    <h2>{{ total_food_rescued }} kg</h2>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- DELIVERY STATISTICS -->
+
+        <section>
+
+            <h2 class="section-title">Delivery Operations</h2>
+
+            <div class="stats-grid">
+
+                <div class="stat-card">
+                    <p>New Requests</p>
+                    <h2>{{ requested_deliveries }}</h2>
+                </div>
+
+                <div class="stat-card">
+                    <p>Active Deliveries</p>
+                    <h2>{{ active_deliveries }}</h2>
+                </div>
+
+                <div class="stat-card">
+                    <p>Completed Deliveries</p>
+                    <h2>{{ completed_deliveries }}</h2>
+                </div>
+
+                <div class="stat-card">
+                    <p>Total Deliveries</p>
+                    <h2>{{ deliveries|length }}</h2>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ANALYTICS -->
+
+        <section id="analytics">
+
+            <h2 class="section-title">Platform Analytics</h2>
+
+            <div class="chart-grid">
+
+                <div class="content-card">
+                    <h3>Donation Status</h3>
+                    <div class="chart-container">
+                        <canvas id="donationChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    <h3>Delivery Status</h3>
+                    <div class="chart-container">
+                        <canvas id="deliveryChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- USER MANAGEMENT -->
+
+        <section id="users">
+
+            <h2 class="section-title">User Management</h2>
+
+            <div class="content-card">
+
+                <div class="notice">
+                    Manage user roles, account access and account removal.
+                    Administrator accounts are protected from these actions.
+                </div>
+
+                <div class="table-wrapper">
+
+                    <table style="min-width: 1150px;">
+
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Organization</th>
+                                <th>Phone</th>
+                                <th>Account Status</th>
+                                <th>Management Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for user in users %}
+
+                            <tr>
+
+                                <td>#{{ user.id }}</td>
+                                <td>{{ user.name }}</td>
+                                <td>{{ user.email }}</td>
+
+                                <td>
+                                    <span class="status">{{ user.role }}</span>
+                                </td>
+
+                                <td>{{ user.organization or "—" }}</td>
+                                <td>{{ user.phone or "—" }}</td>
+
+                                <td>
+
+                                    {% if user.is_active %}
+                                        <span class="status">Active</span>
+                                    {% else %}
+                                        <span class="status danger">Deactivated</span>
+                                    {% endif %}
+
+                                </td>
+
+                                <td>
+
+                                    <div class="management-actions">
+
+                                        {% if user.role == "Admin" %}
+
+                                            <span class="account-protected">
+                                                Protected administrator account
+                                            </span>
+
+                                        {% elif user.id == current_user.id %}
+
+                                            <span class="account-protected">
+                                                Your account
+                                            </span>
+
+                                        {% else %}
+
+                                            <form
+                                                class="management-form"
+                                                method="POST"
+                                                action="{{ url_for('admin_update_user_role', user_id=user.id) }}"
+                                            >
+
+                                                <select name="role" required>
+
+                                                    <option value="Donor"
+                                                        {% if user.role == "Donor" %}selected{% endif %}>
+                                                        Donor
+                                                    </option>
+
+                                                    <option value="NGO"
+                                                        {% if user.role == "NGO" %}selected{% endif %}>
+                                                        NGO
+                                                    </option>
+
+                                                    <option value="Delivery Partner"
+                                                        {% if user.role == "Delivery Partner" %}selected{% endif %}>
+                                                        Delivery Partner
+                                                    </option>
+
+                                                </select>
+
+                                                <button type="submit">
+                                                    Update Role
+                                                </button>
+
+                                            </form>
+
+                                            <form
+                                                method="POST"
+                                                action="{{ url_for('admin_toggle_user_status', user_id=user.id) }}"
+                                                onsubmit="return confirm('Are you sure you want to change this account status?');"
+                                            >
+
+                                                {% if user.is_active %}
+
+                                                    <button type="submit" class="danger-button">
+                                                        Deactivate Account
+                                                    </button>
+
+                                                {% else %}
+
+                                                    <button type="submit" class="secondary-button">
+                                                        Activate Account
+                                                    </button>
+
+                                                {% endif %}
+
+                                            </form>
+
+                                            <form
+                                                method="POST"
+                                                action="{{ url_for('admin_delete_user', user_id=user.id) }}"
+                                                onsubmit="return confirm('Are you sure you want to permanently delete this user? This action cannot be undone.');"
+                                            >
+
+                                                <button type="submit" class="danger-button">
+                                                    Delete User
+                                                </button>
+
+                                            </form>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                            {% else %}
+
+                            <tr>
+                                <td colspan="8" class="empty-state">
+                                    No registered users found.
+                                </td>
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- DONATION MANAGEMENT -->
+
+        <section id="donations">
+
+            <h2 class="section-title">All Food Donations</h2>
+
+            <div class="content-card">
+
+                <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Food</th>
+                                <th>Category</th>
+                                <th>Quantity</th>
+                                <th>Donor</th>
+                                <th>Expiry</th>
+                                <th>Urgency</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for donation in donations %}
+
+                            <tr>
+                                <td>#{{ donation.id }}</td>
+                                <td>{{ donation.food_name }}</td>
+                                <td>{{ donation.food_category }}</td>
+                                <td>{{ donation.quantity_kg }} kg</td>
+
+                                <td>
+                                    {{ donation.donor.name if donation.donor else "Unknown" }}
+                                </td>
+
+                                <td>
+                                    {% if donation.expiry_at %}
+                                        {{ donation.expiry_at.strftime('%d %b %Y %I:%M %p') }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+
+                                <td>{{ donation.urgency_level or "Not analyzed" }}</td>
+
+                                <td>
+                                    <span class="status">{{ donation.status }}</span>
+                                </td>
+                            </tr>
+
+                            {% else %}
+
+                            <tr>
+                                <td colspan="8" class="empty-state">
+                                    No food donations available.
+                                </td>
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- DELIVERY MANAGEMENT -->
+
+        <section id="deliveries">
+
+            <h2 class="section-title">Delivery Management</h2>
+
+            <div class="content-card">
+
+                <div class="table-wrapper">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Food</th>
+                                <th>NGO</th>
+                                <th>Delivery Partner</th>
+                                <th>Status</th>
+                                <th>Assignment</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for delivery in deliveries %}
+
+                            <tr>
+
+                                <td>#{{ delivery.id }}</td>
+
+                                <td>
+                                    {% if delivery.donation %}
+                                        {{ delivery.donation.food_name }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if delivery.receiver %}
+                                        {{ delivery.receiver.name }}
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if delivery.delivery_partner %}
+                                        {{ delivery.delivery_partner.name }}
+                                    {% else %}
+                                        Not assigned
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    <span class="status">{{ delivery.status }}</span>
+                                </td>
+
+                                <td>
+
+                                    {% if delivery.status == "Requested" and not delivery.delivery_partner_id %}
+
+                                        {% if delivery_partners %}
+
+                                            <form
+                                                class="assign-form"
+                                                method="POST"
+                                                action="{{ url_for('admin_assign_delivery', delivery_id=delivery.id) }}"
+                                            >
+
+                                                <select name="partner_id" required>
+                                                    <option value="">Select partner</option>
+
+                                                    {% for partner in delivery_partners %}
+                                                        <option value="{{ partner.id }}">
+                                                            {{ partner.name }}
+                                                        </option>
+                                                    {% endfor %}
+
+                                                </select>
+
+                                                <button type="submit">Assign</button>
+
+                                            </form>
+
+                                        {% else %}
+
+                                            <span class="muted">No partners available</span>
+
+                                        {% endif %}
+
+                                    {% else %}
+
+                                        <span class="muted">No action required</span>
+
+                                    {% endif %}
+
+                                </td>
+
+                            </tr>
+
+                            {% else %}
+
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    No delivery requests found.
+                                </td>
+                            </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- QUICK LINKS -->
+
+        <section>
+
+            <h2 class="section-title">Quick Navigation</h2>
+
+            <div class="content-card">
+
+                <div class="quick-links">
+
+                    <a href="{{ url_for('ai_insights') }}" class="quick-link">
+                        AI Insights
+                    </a>
+
+                    <a href="{{ url_for('notifications') }}" class="quick-link">
+                        Notifications
+                        {% if unread_notification_count > 0 %}
+                            ({{ unread_notification_count }} unread)
+                        {% endif %}
+                    </a>
+
+                    <a href="{{ url_for('dashboard') }}" class="quick-link">
+                        User Dashboard
+                    </a>
+
+                    <a href="{{ url_for('health') }}" class="quick-link">
+                        System Health
+                    </a>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <p class="muted" style="text-align:center; margin-top:35px;">
+            FoodRescue AI | Administrator Control Center
+        </p>
+
+    </main>
+
+</div>
+
+
+<div
+    id="admin-chart-data"
+    data-available="{{ available_donations }}"
+    data-claimed="{{ claimed_donations }}"
+    data-completed="{{ completed_donations }}"
+    data-requested="{{ requested_deliveries }}"
+    data-active="{{ active_deliveries }}"
+    data-delivered="{{ completed_deliveries }}"
+    hidden>
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const chartElement = document.getElementById("admin-chart-data");
+
+    if (!chartElement || typeof Chart === "undefined") {
+        return;
+    }
+
+    const chartValues = {
+        available: Number(chartElement.dataset.available) || 0,
+        claimed: Number(chartElement.dataset.claimed) || 0,
+        completed: Number(chartElement.dataset.completed) || 0,
+        requested: Number(chartElement.dataset.requested) || 0,
+        active: Number(chartElement.dataset.active) || 0,
+        delivered: Number(chartElement.dataset.delivered) || 0
+    };
+
+    const donationCanvas = document.getElementById("donationChart");
+
+    if (donationCanvas) {
+
+        new Chart(donationCanvas, {
+            type: "doughnut",
+
+            data: {
+                labels: ["Available", "Claimed", "Completed"],
+
+                datasets: [{
+                    data: [
+                        chartValues.available,
+                        chartValues.claimed,
+                        chartValues.completed
+                    ],
+
+                    backgroundColor: [
+                        "#4ade80",
+                        "#facc15",
+                        "#38bdf8"
+                    ],
+
+                    borderWidth: 0
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                plugins: {
+                    legend: {
+                        position: "bottom",
+
+                        labels: {
+                            color: "#cbd5ce",
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const deliveryCanvas = document.getElementById("deliveryChart");
+
+    if (deliveryCanvas) {
+
+        new Chart(deliveryCanvas, {
+            type: "doughnut",
+
+            data: {
+                labels: ["Requested", "Active", "Delivered"],
+
+                datasets: [{
+                    data: [
+                        chartValues.requested,
+                        chartValues.active,
+                        chartValues.delivered
+                    ],
+
+                    backgroundColor: [
+                        "#facc15",
+                        "#4ade80",
+                        "#38bdf8"
+                    ],
+
+                    borderWidth: 0
+                }]
+            },
+
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+
+                plugins: {
+                    legend: {
+                        position: "bottom",
+
+                        labels: {
+                            color: "#cbd5ce",
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+});
+</script>
+
+</body>
+</html>

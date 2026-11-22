@@ -1,0 +1,680 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | FoodRescue AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: #06110d;
+            color: #effff5;
+            font-family: Arial, sans-serif;
+        }
+
+        .dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 245px;
+            padding: 30px 20px;
+            background: #091a12;
+            border-right: 1px solid rgba(72,255,173,.12);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .brand {
+            color: #48ffad;
+            font-size: 23px;
+            font-weight: 800;
+            margin-bottom: 45px;
+        }
+
+        .nav-label {
+            color: #658575;
+            font-size: 10px;
+            letter-spacing: 2px;
+            margin: 10px 0 15px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            padding: 13px 14px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            color: #a8c3b3;
+            text-decoration: none;
+            font-size: 14px;
+            transition: .2s;
+        }
+
+        .nav-link.active,
+        .nav-link:hover {
+            background: rgba(72,255,173,.1);
+            color: #48ffad;
+        }
+
+        .notification-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            margin-left: auto;
+            border-radius: 20px;
+            background: #00d68a;
+            color: #052014;
+            font-size: 11px;
+            font-weight: 800;
+            box-shadow: 0 0 12px rgba(0,214,138,.35);
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 35px;
+            min-width: 0;
+            background:
+                radial-gradient(ellipse at 85% 0%, rgba(0,255,157,.08), transparent 35%),
+                #06110d;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 38px;
+        }
+
+        .topbar h1 {
+            font-size: 27px;
+            margin: 0 0 8px;
+        }
+
+        .muted {
+            color: #87a394;
+            font-size: 13px;
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 15px;
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 12px;
+            background: rgba(255,255,255,.035);
+        }
+
+        .avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            background: linear-gradient(135deg,#00d68a,#8affc2);
+            color: #052014;
+            font-weight: 800;
+        }
+
+        .welcome-banner {
+            padding: 30px;
+            border-radius: 19px;
+            border: 1px solid rgba(72,255,173,.2);
+            background:
+                radial-gradient(circle at 90% 20%, rgba(72,255,173,.15), transparent 35%),
+                linear-gradient(120deg,#10291d,#0b1d14);
+            margin-bottom: 30px;
+        }
+
+        .welcome-banner h2 {
+            font-size: 25px;
+            margin: 0 0 10px;
+        }
+
+        .welcome-banner p {
+            color: #a4c1af;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .section-heading {
+            font-size: 17px;
+            margin: 30px 0 17px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4,minmax(0,1fr));
+            gap: 17px;
+        }
+
+        .stat-card {
+            padding: 22px;
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 16px;
+            background: rgba(14,35,25,.8);
+            transition: .25s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(72,255,173,.4);
+            box-shadow: 0 12px 35px rgba(0,255,157,.06);
+        }
+
+        .stat-icon {
+            font-size: 22px;
+            margin-bottom: 18px;
+        }
+
+        .stat-value {
+            color: #effff5;
+            font-size: 27px;
+            font-weight: 800;
+            margin-bottom: 7px;
+        }
+
+        .stat-label {
+            color: #8da999;
+            font-size: 12px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 18px;
+            margin-top: 25px;
+        }
+
+        .panel {
+            padding: 24px;
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 17px;
+            background: rgba(14,35,25,.75);
+        }
+
+        .panel h3 {
+            font-size: 16px;
+            margin: 0 0 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 30px 15px;
+            color: #8da999;
+        }
+
+        .empty-icon {
+            font-size: 36px;
+            margin-bottom: 13px;
+        }
+
+        .action-button {
+            display: inline-block;
+            padding: 12px 19px;
+            border-radius: 9px;
+            background: linear-gradient(120deg,#00d68a,#68ffb5);
+            color: #052014;
+            font-size: 13px;
+            font-weight: 800;
+            text-decoration: none;
+            margin-top: 15px;
+            transition: .2s;
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,214,138,.2);
+        }
+
+        .secondary-button {
+            display: inline-block;
+            padding: 12px 19px;
+            border-radius: 9px;
+            border: 1px solid rgba(72,255,173,.3);
+            color: #48ffad;
+            font-size: 13px;
+            font-weight: 700;
+            text-decoration: none;
+            margin: 15px 8px 0 0;
+        }
+
+        .notice {
+            margin-top: 20px;
+            padding: 15px 18px;
+            border-radius: 11px;
+            background: rgba(72,255,173,.06);
+            border: 1px solid rgba(72,255,173,.15);
+            color: #9dc5ae;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        @media(max-width:1000px) {
+            .stats-grid { grid-template-columns: repeat(2,1fr); }
+        }
+
+        @media(max-width:700px) {
+            .sidebar { width: 75px; padding: 20px 10px; }
+            .brand { font-size: 0; }
+            .brand:first-letter { font-size: 23px; }
+            .nav-label, .nav-link span:not(.notification-count) {
+                display: none;
+            }
+            .nav-link {
+                justify-content: center;
+                text-align: center;
+                font-size: 19px;
+                padding: 13px 5px;
+                position: relative;
+            }
+            .notification-count {
+                display: inline-flex !important;
+                position: absolute;
+                top: 2px;
+                right: 0;
+                min-width: 17px;
+                height: 17px;
+                padding: 0 4px;
+                font-size: 9px;
+            }
+            .main-content { padding: 22px 15px; }
+            .content-grid { grid-template-columns: 1fr; }
+            .topbar { align-items: flex-start; flex-direction: column; }
+        }
+
+        @media(max-width:430px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .stat-card { padding: 15px; }
+            .stat-value { font-size: 22px; }
+        }
+    </style>
+</head>
+
+<body>
+<div class="dashboard-layout">
+
+    <aside class="sidebar">
+        <div class="brand">♻ FoodRescue AI</div>
+
+        <div class="nav-label">WORKSPACE</div>
+
+        <a class="nav-link active" href="{{ url_for('dashboard') }}">
+            ▦ <span>Overview</span>
+        </a>
+
+        {% if current_user.role == "Donor" %}
+
+            <a class="nav-link" href="{{ url_for('donations') }}">
+                ♧ <span>Food Donations</span>
+            </a>
+
+            <a class="nav-link" href="{{ url_for('find_ngos') }}">
+                ⌖ <span>Find NGOs</span>
+            </a>
+
+        {% elif current_user.role == "NGO" %}
+
+            <a class="nav-link" href="{{ url_for('find_ngos') }}">
+                ♧ <span>Find Food</span>
+            </a>
+
+            <a class="nav-link" href="{{ url_for('my_claims') }}">
+                ✓ <span>My Claims</span>
+            </a>
+
+            <a class="nav-link" href="{{ url_for('ngo_profile') }}">
+                ⚙ <span>NGO Profile</span>
+            </a>
+
+        {% elif current_user.role == "Delivery Partner" %}
+
+            <a class="nav-link" href="{{ url_for('my_deliveries') }}">
+                ◷ <span>My Deliveries</span>
+            </a>
+
+        {% endif %}
+
+        <a class="nav-link" href="{{ url_for('ai_insights') }}">
+            ✧ <span>AI Insights</span>
+        </a>
+
+        <!-- NOTIFICATIONS -->
+
+        <a class="nav-link" href="{{ url_for('notifications') }}">
+            ♧ <span>Notifications</span>
+
+            {% if unread_notification_count > 0 %}
+                <span class="notification-count">
+                    {{ unread_notification_count }}
+                </span>
+            {% endif %}
+        </a>
+
+        <div class="sidebar-bottom">
+            <div class="nav-label">ACCOUNT</div>
+
+            <a class="nav-link" href="#">
+                ⚙ <span>Settings</span>
+            </a>
+
+            <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                ↪ <span>Sign Out</span>
+            </a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+            <div>
+                <h1>Dashboard Overview</h1>
+                <div class="muted">
+                    Your FoodRescue AI workspace
+                </div>
+            </div>
+
+            <div class="profile">
+                <div class="avatar">
+                    {{ current_user.name[0]|upper }}
+                </div>
+
+                <div>
+                    <div style="font-size:13px;font-weight:700;">
+                        {{ current_user.name }}
+                    </div>
+                    <div class="muted">
+                        {{ current_user.role }}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <section class="welcome-banner">
+
+            {% if current_user.role == "Donor" %}
+
+                <h2>Welcome back, {{ current_user.name }}! ✨</h2>
+                <p>
+                    Share your surplus food and help prevent food waste.
+                    Every donation can make a difference.
+                </p>
+
+                <a class="action-button" href="{{ url_for('donations') }}">
+                    + Create Food Donation
+                </a>
+
+            {% elif current_user.role == "NGO" %}
+
+                <h2>Welcome, {{ current_user.name }}! ♡</h2>
+                <p>
+                    Find available food donations, rescue surplus meals
+                    and support communities that need them.
+                </p>
+
+                <a class="action-button" href="{{ url_for('find_ngos') }}">
+                    Find Available Food
+                </a>
+
+                <a class="secondary-button" href="{{ url_for('my_claims') }}">
+                    View My Claims
+                </a>
+
+                <a class="secondary-button" href="{{ url_for('ngo_profile') }}">
+                    Complete NGO Profile
+                </a>
+
+            {% elif current_user.role == "Delivery Partner" %}
+
+                <h2>Welcome, {{ current_user.name }}! 🚚</h2>
+                <p>
+                    Manage your assigned deliveries, collect donated food
+                    and track each delivery until it reaches the NGO.
+                </p>
+
+                <a class="action-button" href="{{ url_for('my_deliveries') }}">
+                    Open Delivery Workspace
+                </a>
+
+            {% endif %}
+
+        </section>
+
+        <h2 class="section-heading">
+            {% if current_user.role == "Donor" %}
+                Your Donation Statistics
+            {% elif current_user.role == "NGO" %}
+                Your Food Rescue Statistics
+            {% elif current_user.role == "Delivery Partner" %}
+                Your Delivery Statistics
+            {% endif %}
+        </h2>
+
+        <section class="stats-grid">
+
+            {% if current_user.role == "Donor" %}
+
+                <div class="stat-card">
+                    <div class="stat-icon">♧</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.total_donations }}
+                    </div>
+                    <div class="stat-label">Total Donations</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">⚖</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.total_quantity }} kg
+                    </div>
+                    <div class="stat-label">Total Food Donated</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">◷</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.active_donations }}
+                    </div>
+                    <div class="stat-label">Available Donations</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">✓</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.completed_donations }}
+                    </div>
+                    <div class="stat-label">Completed Donations</div>
+                </div>
+
+            {% elif current_user.role == "NGO" %}
+
+                <div class="stat-card">
+                    <div class="stat-icon">♡</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.total_claims }}
+                    </div>
+                    <div class="stat-label">Total Food Claims</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">⚖</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.total_quantity }} kg
+                    </div>
+                    <div class="stat-label">Food Rescued</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">◷</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.active_claims }}
+                    </div>
+                    <div class="stat-label">Active Claims</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">✓</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.completed_claims }}
+                    </div>
+                    <div class="stat-label">Completed Claims</div>
+                </div>
+
+            {% elif current_user.role == "Delivery Partner" %}
+
+                <div class="stat-card">
+                    <div class="stat-icon">🚚</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.total_deliveries }}
+                    </div>
+                    <div class="stat-label">Total Deliveries</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">◷</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.pending_deliveries }}
+                    </div>
+                    <div class="stat-label">Pending Deliveries</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">✓</div>
+                    <div class="stat-value">
+                        {{ dashboard_data.completed_deliveries }}
+                    </div>
+                    <div class="stat-label">Completed Deliveries</div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">✧</div>
+                    <div class="stat-value">AI</div>
+                    <div class="stat-label">Food Intelligence</div>
+                </div>
+
+            {% endif %}
+
+        </section>
+
+        <h2 class="section-heading">Quick Actions</h2>
+
+        <section class="content-grid">
+
+            <div class="panel">
+                <h3>
+                    {% if current_user.role == "Donor" %}
+                        Manage Your Donations
+                    {% elif current_user.role == "NGO" %}
+                        Find Food Donations
+                    {% else %}
+                        Delivery Workspace
+                    {% endif %}
+                </h3>
+
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        {% if current_user.role == "Donor" %}
+                            ♧
+                        {% elif current_user.role == "NGO" %}
+                            ♡
+                        {% else %}
+                            🚚
+                        {% endif %}
+                    </div>
+
+                    <strong>
+                        {% if current_user.role == "Donor" %}
+                            Make your next donation
+                        {% elif current_user.role == "NGO" %}
+                            Discover available food
+                        {% else %}
+                            Manage your assigned deliveries
+                        {% endif %}
+                    </strong>
+
+                    <p class="muted">
+                        {% if current_user.role == "Donor" %}
+                            Add surplus food and make it available to NGOs.
+                        {% elif current_user.role == "NGO" %}
+                            Browse available food and claim donations for your organization.
+                        {% else %}
+                            View pickup information, contact details and update delivery progress.
+                        {% endif %}
+                    </p>
+
+                    {% if current_user.role == "Donor" %}
+
+                        <a class="action-button" href="{{ url_for('donations') }}">
+                            Manage Donations
+                        </a>
+
+                    {% elif current_user.role == "NGO" %}
+
+                        <a class="action-button" href="{{ url_for('find_ngos') }}">
+                            Browse Food
+                        </a>
+
+                        <a class="secondary-button" href="{{ url_for('ngo_profile') }}">
+                            Update NGO Profile
+                        </a>
+
+                    {% elif current_user.role == "Delivery Partner" %}
+
+                        <a class="action-button" href="{{ url_for('my_deliveries') }}">
+                            View My Deliveries
+                        </a>
+
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>AI Food Intelligence</h3>
+
+                <div class="empty-state">
+                    <div class="empty-icon">✧</div>
+
+                    <strong>Smart food rescue</strong>
+
+                    <p class="muted">
+                        Our machine learning engine estimates food demand
+                        and identifies potential surplus to support
+                        smarter food distribution.
+                    </p>
+
+                    <a class="action-button" href="{{ url_for('ai_insights') }}">
+                        Explore AI Insights
+                    </a>
+                </div>
+            </div>
+
+        </section>
+
+        <div class="notice">
+            FoodRescue AI is currently operating in demonstration mode.
+            Dashboard statistics are calculated from records stored
+            in your local database. AI predictions are experimental
+            and are not yet validated using real-world operational data.
+        </div>
+
+    </main>
+</div>
+</body>
+</html>

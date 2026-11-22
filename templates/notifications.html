@@ -1,0 +1,560 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications | FoodRescue AI</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #07130f;
+            color: #e8f5ee;
+            font-family: Arial, sans-serif;
+        }
+
+        .page {
+            width: min(1050px, 92%);
+            margin: 45px auto;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .topbar h1 {
+            margin: 0 0 8px;
+            font-size: 30px;
+        }
+
+        .subtitle {
+            color: #91aa9c;
+            margin: 0;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 11px 17px;
+            border-radius: 9px;
+            text-decoration: none;
+            border: 1px solid #245a42;
+            background: #10291e;
+            color: #d9f5e4;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .btn-primary {
+            background: #087b4b;
+            border-color: #0b9b60;
+            color: white;
+        }
+
+        .btn:hover {
+            filter: brightness(1.2);
+        }
+
+        .summary {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 20px;
+            margin-bottom: 22px;
+            border: 1px solid #1c4934;
+            border-radius: 15px;
+            background: linear-gradient(135deg, #10291e, #0b1d15);
+        }
+
+        .summary-label {
+            color: #a5bdae;
+            font-size: 14px;
+        }
+
+        .summary-number {
+            display: block;
+            font-size: 28px;
+            font-weight: bold;
+            color: #65e6a2;
+            margin-top: 5px;
+        }
+
+        .filter-panel {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+
+        .filter-control {
+            width: 100%;
+            padding: 12px 13px;
+            border-radius: 9px;
+            border: 1px solid #24523a;
+            background: #0d2117;
+            color: #e8f5ee;
+            outline: none;
+            font-size: 13px;
+        }
+
+        .filter-control:focus {
+            border-color: #35d889;
+            box-shadow: 0 0 0 2px rgba(53, 216, 137, 0.12);
+        }
+
+        .filter-control::placeholder {
+            color: #82988a;
+        }
+
+        .results-label {
+            color: #91aa9c;
+            font-size: 13px;
+            margin-bottom: 14px;
+        }
+
+        .notification-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .notification {
+            position: relative;
+            padding: 21px;
+            border-radius: 14px;
+            border: 1px solid #203e30;
+            background: #0d1e16;
+            transition: 0.2s ease;
+        }
+
+        .notification:hover {
+            border-color: #268858;
+            transform: translateY(-2px);
+        }
+
+        .notification.unread {
+            border-left: 4px solid #35d889;
+            background: linear-gradient(110deg, #10291e, #0d1e16);
+        }
+
+        .notification-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .notification-title {
+            font-size: 17px;
+            font-weight: bold;
+            margin: 0;
+            color: #e7f8ed;
+        }
+
+        .notification-type {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            background: #173b2a;
+            color: #83eab0;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        .notification-message {
+            color: #b4c9bb;
+            line-height: 1.6;
+            margin: 0 0 14px;
+            overflow-wrap: anywhere;
+        }
+
+        .notification-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .notification-date {
+            color: #82988a;
+            font-size: 12px;
+        }
+
+        .read-status {
+            color: #63df9b;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .unread-status {
+            color: #f4c66b;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .read-form {
+            margin: 0;
+        }
+
+        .read-btn {
+            padding: 7px 12px;
+            border-radius: 7px;
+            border: 1px solid #27794d;
+            background: #123522;
+            color: #9bf0bd;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .read-btn:hover {
+            background: #195335;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 65px 20px;
+            border: 1px dashed #315541;
+            border-radius: 15px;
+            background: #0c1b14;
+        }
+
+        .empty-icon {
+            font-size: 42px;
+            margin-bottom: 15px;
+        }
+
+        .empty-state h2 {
+            margin: 0 0 10px;
+        }
+
+        .empty-state p {
+            color: #91aa9c;
+            margin: 0;
+        }
+
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .flash-message {
+            padding: 12px 15px;
+            margin-bottom: 9px;
+            border-radius: 8px;
+            background: #173b2a;
+            border: 1px solid #287b4e;
+            color: #b7f4ce;
+        }
+
+        .no-results {
+            display: none;
+            text-align: center;
+            padding: 35px 20px;
+            border: 1px dashed #315541;
+            border-radius: 14px;
+            background: #0c1b14;
+            color: #91aa9c;
+        }
+
+        @media (max-width: 700px) {
+            .filter-panel {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .page {
+                margin: 25px auto;
+            }
+
+            .topbar h1 {
+                font-size: 25px;
+            }
+
+            .notification {
+                padding: 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page">
+
+    <div class="topbar">
+        <div>
+            <h1>🔔 Notifications</h1>
+            <p class="subtitle">
+                Stay updated on your FoodRescue AI activity.
+            </p>
+        </div>
+
+        <div class="actions">
+            <a href="{{ url_for('dashboard') }}" class="btn">
+                ← Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="summary">
+        <div>
+            <span class="summary-label">Unread Notifications</span>
+            <span class="summary-number">{{ unread_count }}</span>
+        </div>
+
+        {% if unread_count > 0 %}
+            <form method="POST" action="{{ url_for('mark_all_notifications_read') }}">
+                <button type="submit" class="btn btn-primary">
+                    Mark All as Read
+                </button>
+            </form>
+        {% endif %}
+    </div>
+
+    {% if notifications %}
+
+        <div class="filter-panel">
+
+            <input
+                type="search"
+                id="notificationSearch"
+                class="filter-control"
+                placeholder="🔍 Search notifications..."
+                aria-label="Search notifications"
+            >
+
+            <select
+                id="categoryFilter"
+                class="filter-control"
+                aria-label="Filter by category"
+            >
+                <option value="all">All Categories</option>
+            </select>
+
+            <select
+                id="statusFilter"
+                class="filter-control"
+                aria-label="Filter by read status"
+            >
+                <option value="all">All Notifications</option>
+                <option value="unread">Unread Only</option>
+                <option value="read">Read Only</option>
+            </select>
+
+        </div>
+
+        <div class="results-label" id="resultsLabel">
+            Showing {{ notifications|length }} notifications
+        </div>
+
+        <div class="notification-list" id="notificationList">
+
+            {% for notification in notifications %}
+
+                <div
+                    class="notification {% if not notification.is_read %}unread{% endif %}"
+                    data-type="{{ notification.notification_type or 'General' }}"
+                    data-status="{{ 'read' if notification.is_read else 'unread' }}"
+                    data-search="{{ (notification.title ~ ' ' ~ notification.message ~ ' ' ~ (notification.notification_type or 'General'))|lower }}"
+                >
+
+                    <div class="notification-top">
+
+                        <h3 class="notification-title">
+                            {{ notification.title }}
+                        </h3>
+
+                        <span class="notification-type">
+                            {{ notification.notification_type or 'General' }}
+                        </span>
+
+                    </div>
+
+                    <p class="notification-message">
+                        {{ notification.message }}
+                    </p>
+
+                    <div class="notification-footer">
+
+                        <span class="notification-date">
+                            {{ notification.created_at.strftime('%d %b %Y, %I:%M %p') if notification.created_at else 'Date unavailable' }}
+                        </span>
+
+                        {% if notification.is_read %}
+
+                            <span class="read-status">
+                                ✓ Read
+                            </span>
+
+                        {% else %}
+
+                            <div style="display:flex; align-items:center; gap:12px;">
+
+                                <span class="unread-status">
+                                    ● Unread
+                                </span>
+
+                                <form
+                                    class="read-form"
+                                    method="POST"
+                                    action="{{ url_for('mark_notification_read', notification_id=notification.id) }}"
+                                >
+                                    <button type="submit" class="read-btn">
+                                        Mark as Read
+                                    </button>
+                                </form>
+
+                            </div>
+
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        <div class="no-results" id="noResults">
+            <div class="empty-icon">🔎</div>
+            <h3>No Matching Notifications</h3>
+            <p>Try changing your search or filter settings.</p>
+        </div>
+
+    {% else %}
+
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <h2>No Notifications Yet</h2>
+            <p>
+                Updates about claims, deliveries and other activities
+                will appear here.
+            </p>
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% if notifications %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const searchInput = document.getElementById("notificationSearch");
+    const categoryFilter = document.getElementById("categoryFilter");
+    const statusFilter = document.getElementById("statusFilter");
+
+    const notificationCards = Array.from(
+        document.querySelectorAll(".notification")
+    );
+
+    const resultsLabel = document.getElementById("resultsLabel");
+    const noResults = document.getElementById("noResults");
+
+    // Create category options from actual notifications.
+    const categories = [
+        ...new Set(
+            notificationCards.map(card => card.dataset.type)
+        )
+    ].sort();
+
+    categories.forEach(function (category) {
+
+        const option = document.createElement("option");
+
+        option.value = category.toLowerCase();
+        option.textContent = category;
+
+        categoryFilter.appendChild(option);
+
+    });
+
+    // Search and filter notifications.
+    function filterNotifications() {
+
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        const selectedCategory = categoryFilter.value;
+        const selectedStatus = statusFilter.value;
+
+        let visibleCount = 0;
+
+        notificationCards.forEach(function (card) {
+
+            const searchText = card.dataset.search || "";
+            const category = card.dataset.type.toLowerCase();
+            const status = card.dataset.status;
+
+            const matchesSearch = searchText.includes(searchTerm);
+
+            const matchesCategory =
+                selectedCategory === "all" ||
+                category === selectedCategory;
+
+            const matchesStatus =
+                selectedStatus === "all" ||
+                status === selectedStatus;
+
+            const isVisible =
+                matchesSearch && matchesCategory && matchesStatus;
+
+            card.style.display = isVisible ? "" : "none";
+
+            if (isVisible) {
+                visibleCount++;
+            }
+
+        });
+
+        resultsLabel.textContent =
+            "Showing " + visibleCount + " of " +
+            notificationCards.length + " notifications";
+
+        noResults.style.display =
+            visibleCount === 0 ? "block" : "none";
+
+    }
+
+    searchInput.addEventListener("input", filterNotifications);
+    categoryFilter.addEventListener("change", filterNotifications);
+    statusFilter.addEventListener("change", filterNotifications);
+
+});
+</script>
+{% endif %}
+
+</body>
+</html>

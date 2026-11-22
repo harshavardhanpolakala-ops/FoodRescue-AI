@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email | FoodRescue AI</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 25px;
+            background:
+                radial-gradient(circle at 15% 20%, rgba(0, 255, 157, 0.12), transparent 35%),
+                radial-gradient(circle at 85% 80%, rgba(0, 190, 120, 0.12), transparent 35%),
+                #06110d;
+            color: #f2fff8;
+            font-family: Arial, sans-serif;
+        }
+
+        .verification-card {
+            width: 100%;
+            max-width: 460px;
+            padding: 42px 35px;
+            text-align: center;
+            border: 1px solid rgba(0, 255, 150, 0.22);
+            border-radius: 24px;
+            background: rgba(13, 34, 25, 0.88);
+            box-shadow: 0 20px 80px rgba(0, 255, 130, 0.08);
+            backdrop-filter: blur(18px);
+        }
+
+        .mail-icon {
+            width: 76px;
+            height: 76px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            border-radius: 22px;
+            background: rgba(0, 255, 140, 0.12);
+            border: 1px solid rgba(0, 255, 140, 0.25);
+            font-size: 34px;
+        }
+
+        .brand {
+            color: #48f5a3;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            margin-bottom: 18px;
+        }
+
+        h1 {
+            font-size: 29px;
+            margin: 0 0 13px;
+        }
+
+        .description {
+            color: #a9c4b5;
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 27px;
+        }
+
+        .email-address {
+            color: #55f5a6;
+            font-weight: bold;
+            word-break: break-word;
+        }
+
+        .otp-input {
+            width: 100%;
+            padding: 17px 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 255, 150, 0.3);
+            outline: none;
+            background: #081b13;
+            color: white;
+            text-align: center;
+            font-size: 27px;
+            letter-spacing: 12px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .otp-input:focus {
+            border-color: #43f5a0;
+            box-shadow: 0 0 18px rgba(0, 255, 140, 0.12);
+        }
+
+        .verify-button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #39f59a, #00b978);
+            color: #04140c;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.25s;
+        }
+
+        .verify-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 255, 140, 0.2);
+        }
+
+        .resend-section {
+            margin-top: 25px;
+            color: #9ab5a6;
+            font-size: 13px;
+        }
+
+        .resend-button {
+            background: none;
+            border: none;
+            color: #4af5a2;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 25px;
+            color: #91b6a2;
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .back-link:hover {
+            color: #4af5a2;
+        }
+
+        .flash-message {
+            padding: 12px;
+            margin-bottom: 18px;
+            border-radius: 10px;
+            font-size: 13px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #dfffee;
+        }
+
+        @media (max-width: 480px) {
+            .verification-card {
+                padding: 35px 22px;
+            }
+
+            h1 {
+                font-size: 25px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="verification-card">
+
+        <div class="mail-icon">✉️</div>
+
+        <div class="brand">FOODRESCUE AI</div>
+
+        <h1>Verify your email</h1>
+
+        <p class="description">
+            We've sent a 6-digit verification code to
+            <br>
+            <span class="email-address">{{ email }}</span>
+            <br><br>
+            Enter the code below to activate your account.
+            The code expires in 5 minutes.
+        </p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash-message">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" action="{{ url_for('auth.verify_email') }}">
+
+            <input
+                type="text"
+                name="otp"
+                class="otp-input"
+                placeholder="000000"
+                maxlength="6"
+                minlength="6"
+                pattern="[0-9]{6}"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                required
+            >
+
+            <button type="submit" class="verify-button">
+                VERIFY EMAIL →
+            </button>
+
+        </form>
+
+        <div class="resend-section">
+            Didn't receive the code?
+
+            <form method="POST" action="{{ url_for('auth.resend_otp') }}">
+                <button type="submit" class="resend-button">
+                    RESEND VERIFICATION CODE
+                </button>
+            </form>
+        </div>
+
+        <a href="{{ url_for('auth.register') }}" class="back-link">
+            ← Back to registration
+        </a>
+
+    </div>
+
+</body>
+</html>

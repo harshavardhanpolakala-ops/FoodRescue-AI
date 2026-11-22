@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In | FoodRescue AI</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        .auth-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 20px;
+            background:
+                radial-gradient(ellipse at 15% 15%, rgba(0,255,157,.13), transparent 40%),
+                radial-gradient(ellipse at 85% 85%, rgba(0,180,120,.12), transparent 40%),
+                #06110d;
+        }
+        .auth-card {
+            width: 100%;
+            max-width: 460px;
+            padding: 42px;
+            border: 1px solid rgba(0,255,157,.2);
+            border-radius: 24px;
+            background: rgba(12,30,23,.88);
+            box-shadow: 0 0 70px rgba(0,255,157,.08);
+            backdrop-filter: blur(20px);
+        }
+        .auth-logo {
+            color: #48ffad;
+            font-size: 25px;
+            font-weight: 800;
+            margin-bottom: 35px;
+        }
+        .auth-card h1 {
+            color: #f1fff7;
+            font-size: 34px;
+            margin-bottom: 9px;
+        }
+        .auth-subtitle {
+            color: #91aa9c;
+            margin-bottom: 30px;
+        }
+        .auth-form label {
+            display: block;
+            color: #c9dfd2;
+            margin: 19px 0 8px;
+            font-size: 13px;
+        }
+        .auth-form input {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 10px;
+            background: #10251b;
+            color: #fff;
+            outline: none;
+            font-size: 14px;
+        }
+        .auth-form input:focus {
+            border-color: #48ffad;
+            box-shadow: 0 0 0 3px rgba(72,255,173,.1);
+        }
+        .auth-submit {
+            width: 100%;
+            margin-top: 28px;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(120deg,#00d68a,#68ffb5);
+            color: #052014;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+        }
+        .auth-submit:hover {
+            box-shadow: 0 0 25px rgba(72,255,173,.3);
+            transform: translateY(-2px);
+        }
+        .auth-footer {
+            text-align: center;
+            color: #91aa9c;
+            margin-top: 25px;
+            font-size: 14px;
+        }
+        .auth-footer a {
+            color: #48ffad;
+            text-decoration: none;
+            font-weight: 700;
+        }
+        .auth-message {
+            padding: 12px;
+            margin-bottom: 12px;
+            border-radius: 9px;
+            color: #ffd6d6;
+            background: rgba(255,70,70,.12);
+        }
+        @media(max-width:500px) {
+            .auth-card { padding: 27px 21px; }
+        }
+    </style>
+</head>
+<body>
+    <main class="auth-page">
+        <section class="auth-card">
+            <div class="auth-logo">♻ FoodRescue AI</div>
+
+            <h1>Welcome back</h1>
+            <p class="auth-subtitle">Sign in to your FoodRescue AI account.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="auth-message">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form class="auth-form" method="POST">
+                <label for="email">Email address</label>
+                <input type="email" id="email" name="email"
+                       placeholder="you@example.com" required>
+
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password"
+                       placeholder="Enter your password" required>
+
+                <button class="auth-submit" type="submit">
+                    Sign In →
+                </button>
+            </form>
+
+            <p class="auth-footer">
+                Don't have an account?
+                <a href="{{ url_for('auth.register') }}">Create account</a>
+            </p>
+        </section>
+    </main>
+</body>
+</html>

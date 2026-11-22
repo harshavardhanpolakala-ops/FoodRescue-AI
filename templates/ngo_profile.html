@@ -1,0 +1,665 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>NGO Profile | FoodRescue AI</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at 10% 10%, rgba(16,185,129,.13), transparent 35%),
+                #07130f;
+            color: #e8f5ef;
+            font-family: Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 55px auto;
+            padding: 20px;
+        }
+
+        .profile-card {
+            background: rgba(15, 35, 27, .88);
+            border: 1px solid rgba(52, 211, 153, .2);
+            border-radius: 22px;
+            padding: 35px;
+            box-shadow: 0 15px 50px rgba(0,0,0,.3);
+        }
+
+        .heading {
+            margin-bottom: 30px;
+        }
+
+        .heading h1 {
+            color: #6ee7b7;
+            margin-bottom: 10px;
+            font-size: 29px;
+        }
+
+        .heading p {
+            color: #9bb5a8;
+            line-height: 1.6;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 22px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            color: #c9e8d9;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 14px;
+            background: #0b2118;
+            border: 1px solid #28513d;
+            border-radius: 10px;
+            color: white;
+            outline: none;
+            font-size: 14px;
+        }
+
+        input:focus, select:focus {
+            border-color: #34d399;
+            box-shadow: 0 0 0 3px rgba(52,211,153,.1);
+        }
+
+        .help {
+            color: #86a597;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .location-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .location-btn {
+            border: 1px solid rgba(52, 211, 153, .35);
+            border-radius: 9px;
+            padding: 12px 16px;
+            background: rgba(16, 185, 129, .12);
+            color: #6ee7b7;
+            font-weight: bold;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .location-btn:hover {
+            background: rgba(16, 185, 129, .22);
+            transform: translateY(-1px);
+        }
+
+        .location-status {
+            color: #86a597;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        #ngoProfileMap {
+            width: 100%;
+            height: 350px;
+            border-radius: 12px;
+            border: 1px solid rgba(52, 211, 153, .25);
+            background: #10251b;
+            z-index: 1;
+        }
+
+        .map-section {
+            margin-top: 8px;
+        }
+
+        .map-section h3 {
+            color: #6ee7b7;
+            font-size: 17px;
+            margin-bottom: 8px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            margin-top: 28px;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #059669, #10b981);
+            color: white;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: .2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(16,185,129,.25);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 22px;
+            color: #6ee7b7;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .flash-message {
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            border-radius: 9px;
+            background: rgba(16,185,129,.12);
+            border: 1px solid rgba(16,185,129,.3);
+            color: #a7f3d0;
+        }
+
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip {
+            background: #10251b;
+            color: #e8f5ed;
+        }
+
+        @media(max-width: 650px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-card {
+                padding: 23px;
+            }
+
+            .full-width {
+                grid-column: auto;
+            }
+
+            #ngoProfileMap {
+                height: 290px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="profile-card">
+
+        <div class="heading">
+            <h1>NGO Profile Settings</h1>
+
+            <p>
+                Complete your organization profile to help FoodRescue AI
+                recommend suitable food donations based on your needs,
+                location and available capacity.
+            </p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash-message">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+        <form method="POST" id="ngoProfileForm">
+
+            <div class="form-grid">
+
+                <div class="form-group full-width">
+                    <label>Organization Name</label>
+
+                    <input
+                        type="text"
+                        value="{{ current_user.organization or '' }}"
+                        disabled
+                    >
+
+                    <span class="help">
+                        This is the organization name registered with your account.
+                    </span>
+                </div>
+
+
+                <div class="form-group full-width">
+                    <label for="service_area">Service Area</label>
+
+                    <input
+                        type="text"
+                        id="service_area"
+                        name="service_area"
+                        value="{{ current_user.service_area or '' }}"
+                        placeholder="Example: Bengaluru, Karnataka"
+                        maxlength="150"
+                        required
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="latitude">Latitude</label>
+
+                    <input
+                        type="number"
+                        id="latitude"
+                        name="latitude"
+                        step="any"
+                        min="-90"
+                        max="90"
+                        value="{{ current_user.latitude if current_user.latitude is not none else '' }}"
+                        placeholder="Example: 12.9716"
+                    >
+                </div>
+
+
+                <div class="form-group">
+                    <label for="longitude">Longitude</label>
+
+                    <input
+                        type="number"
+                        id="longitude"
+                        name="longitude"
+                        step="any"
+                        min="-180"
+                        max="180"
+                        value="{{ current_user.longitude if current_user.longitude is not none else '' }}"
+                        placeholder="Example: 77.5946"
+                    >
+                </div>
+
+
+                <div class="form-group full-width">
+
+                    <div class="location-actions">
+
+                        <button
+                            type="button"
+                            class="location-btn"
+                            id="getLocationBtn"
+                        >
+                            📍 Use My Current Location
+                        </button>
+
+                        <button
+                            type="button"
+                            class="location-btn"
+                            id="clearLocationBtn"
+                        >
+                            Clear Coordinates
+                        </button>
+
+                    </div>
+
+                    <span class="location-status" id="locationStatus">
+                        Enter coordinates manually, use your current location,
+                        or select a point on the map.
+                    </span>
+
+                </div>
+
+
+                <div class="form-group full-width map-section">
+
+                    <h3>Choose Your NGO Location</h3>
+
+                    <span class="help">
+                        Click on the map to place your organization's location.
+                        The latitude and longitude fields will update automatically.
+                    </span>
+
+                    <div id="ngoProfileMap"></div>
+
+                </div>
+
+
+                <div class="form-group full-width">
+
+                    <label for="preferred_categories">
+                        Preferred Food Categories
+                    </label>
+
+                    <input
+                        type="text"
+                        id="preferred_categories"
+                        name="preferred_categories"
+                        value="{{ current_user.preferred_categories or '' }}"
+                        placeholder="Example: Cooked Meals, Fruits, Vegetables"
+                        maxlength="300"
+                        required
+                    >
+
+                    <span class="help">
+                        Enter categories separated by commas. Use the same
+                        category names that donors select.
+                    </span>
+
+                </div>
+
+
+                <div class="form-group full-width">
+
+                    <label for="capacity_kg">
+                        Maximum Food Capacity (KG)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="capacity_kg"
+                        name="capacity_kg"
+                        min="0.01"
+                        step="0.01"
+                        value="{{ current_user.capacity_kg if current_user.capacity_kg is not none else '' }}"
+                        placeholder="Example: 100"
+                        required
+                    >
+
+                    <span class="help">
+                        Enter the maximum quantity of food your organization
+                        can currently handle.
+                    </span>
+
+                </div>
+
+            </div>
+
+            <button type="submit" class="submit-btn">
+                Save NGO Profile
+            </button>
+
+        </form>
+
+        <a href="{{ url_for('dashboard') }}" class="back-link">
+            ← Back to Dashboard
+        </a>
+
+    </div>
+
+</div>
+
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+    const latitudeInput = document.getElementById("latitude");
+    const longitudeInput = document.getElementById("longitude");
+
+    const locationStatus =
+        document.getElementById("locationStatus");
+
+    const getLocationBtn =
+        document.getElementById("getLocationBtn");
+
+    const clearLocationBtn =
+        document.getElementById("clearLocationBtn");
+
+    const form =
+        document.getElementById("ngoProfileForm");
+
+
+    // Default map location
+    const defaultLatitude = 20;
+    const defaultLongitude = 0;
+
+    const ngoMap = L.map("ngoProfileMap").setView(
+        [defaultLatitude, defaultLongitude],
+        2
+    );
+
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+        {
+            attribution: '&copy; OpenStreetMap contributors',
+            maxZoom: 19
+        }
+    ).addTo(ngoMap);
+
+
+    // Existing saved coordinates
+    let marker = null;
+
+    function updateMarker(latitude, longitude, zoom = 14) {
+
+        if (
+            !Number.isFinite(latitude) ||
+            !Number.isFinite(longitude) ||
+            latitude < -90 ||
+            latitude > 90 ||
+            longitude < -180 ||
+            longitude > 180
+        ) {
+            return;
+        }
+
+        if (marker) {
+            ngoMap.removeLayer(marker);
+        }
+
+        marker = L.marker([latitude, longitude]).addTo(ngoMap);
+
+        marker.bindPopup(
+            "Your NGO location"
+        ).openPopup();
+
+        ngoMap.setView([latitude, longitude], zoom);
+
+    }
+
+
+    // Load saved location
+    const savedLatitude = latitudeInput.value.trim();
+    const savedLongitude = longitudeInput.value.trim();
+
+    if (savedLatitude !== "" && savedLongitude !== "") {
+
+        const latitude = Number(savedLatitude);
+        const longitude = Number(savedLongitude);
+
+        if (
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude) &&
+            latitude >= -90 &&
+            latitude <= 90 &&
+            longitude >= -180 &&
+            longitude <= 180
+        ) {
+
+            updateMarker(latitude, longitude);
+
+            locationStatus.textContent =
+                "Your saved NGO location is displayed on the map.";
+
+        }
+
+    }
+
+
+    // Map click updates coordinate fields
+    ngoMap.on("click", function(event) {
+
+        const latitude = event.latlng.lat;
+        const longitude = event.latlng.lng;
+
+        latitudeInput.value = latitude.toFixed(6);
+        longitudeInput.value = longitude.toFixed(6);
+
+        updateMarker(latitude, longitude);
+
+        locationStatus.textContent =
+            "Location selected successfully. Save your profile to update it.";
+
+    });
+
+
+    // Use current browser location
+    getLocationBtn.addEventListener("click", function() {
+
+        if (!navigator.geolocation) {
+
+            locationStatus.textContent =
+                "Your browser does not support location detection.";
+
+            return;
+
+        }
+
+        locationStatus.textContent =
+            "Detecting your current location...";
+
+        navigator.geolocation.getCurrentPosition(
+
+            function(position) {
+
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+
+                latitudeInput.value = latitude.toFixed(6);
+                longitudeInput.value = longitude.toFixed(6);
+
+                updateMarker(latitude, longitude);
+
+                locationStatus.textContent =
+                    "Current location detected. Save your profile to update it.";
+
+            },
+
+            function(error) {
+
+                let message =
+                    "Unable to detect your location.";
+
+                if (error.code === error.PERMISSION_DENIED) {
+                    message =
+                        "Location permission denied. Allow location access in your browser.";
+                } else if (error.code === error.POSITION_UNAVAILABLE) {
+                    message =
+                        "Your current location is unavailable.";
+                } else if (error.code === error.TIMEOUT) {
+                    message =
+                        "Location request timed out. Please try again.";
+                }
+
+                locationStatus.textContent = message;
+
+            },
+
+            {
+                enableHighAccuracy: true,
+                timeout: 15000,
+                maximumAge: 0
+            }
+
+        );
+
+    });
+
+
+    // Clear coordinates
+    clearLocationBtn.addEventListener("click", function() {
+
+        latitudeInput.value = "";
+        longitudeInput.value = "";
+
+        if (marker) {
+            ngoMap.removeLayer(marker);
+            marker = null;
+        }
+
+        ngoMap.setView([20, 0], 2);
+
+        locationStatus.textContent =
+            "Coordinates cleared. Save your profile to remove your saved location.";
+
+    });
+
+
+    // Validate coordinates before submitting
+    form.addEventListener("submit", function(event) {
+
+        const latitude = latitudeInput.value.trim();
+        const longitude = longitudeInput.value.trim();
+
+        if ((latitude === "") !== (longitude === "")) {
+
+            event.preventDefault();
+
+            locationStatus.textContent =
+                "Please enter both latitude and longitude, or leave both empty.";
+
+            return;
+
+        }
+
+        if (latitude !== "" && longitude !== "") {
+
+            const lat = Number(latitude);
+            const lng = Number(longitude);
+
+            if (
+                !Number.isFinite(lat) ||
+                !Number.isFinite(lng) ||
+                lat < -90 ||
+                lat > 90 ||
+                lng < -180 ||
+                lng > 180
+            ) {
+
+                event.preventDefault();
+
+                locationStatus.textContent =
+                    "Please enter valid latitude and longitude values.";
+
+                return;
+
+            }
+
+        }
+
+    });
+
+
+    // Fix map rendering after page load
+    setTimeout(function() {
+        ngoMap.invalidateSize();
+    }, 300);
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,913 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>My Deliveries | FoodRescue AI</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    >
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #06110d;
+            color: #effff5;
+            font-family: Arial, sans-serif;
+        }
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 245px;
+            padding: 30px 20px;
+            background: #091a12;
+            border-right: 1px solid rgba(72,255,173,.12);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand {
+            color: #48ffad;
+            font-size: 22px;
+            font-weight: 800;
+            margin-bottom: 45px;
+        }
+
+        .nav-label {
+            color: #658575;
+            font-size: 10px;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 13px;
+            margin-bottom: 8px;
+            border-radius: 10px;
+            color: #a8c3b3;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: rgba(72,255,173,.1);
+            color: #48ffad;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .main {
+            flex: 1;
+            min-width: 0;
+            padding: 38px;
+            background:
+                radial-gradient(ellipse at 85% 0%,rgba(0,255,157,.08),transparent 35%),
+                #06110d;
+        }
+
+        .topbar {
+            margin-bottom: 32px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 0 0 8px;
+        }
+
+        .muted {
+            color: #87a394;
+            font-size: 13px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 17px;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            padding: 23px;
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 16px;
+            background: rgba(14,35,25,.8);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 800;
+            margin: 12px 0 7px;
+            color: #48ffad;
+        }
+
+        .section-title {
+            font-size: 19px;
+            margin: 30px 0 18px;
+        }
+
+        .delivery-grid {
+            display: grid;
+            grid-template-columns: repeat(2,minmax(0,1fr));
+            gap: 20px;
+        }
+
+        .delivery-card {
+            padding: 23px;
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 16px;
+            background: rgba(14,35,25,.8);
+            min-width: 0;
+        }
+
+        .delivery-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .food-name {
+            font-size: 19px;
+            font-weight: bold;
+            margin-bottom: 7px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 7px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .status.assigned {
+            background: rgba(255,190,70,.12);
+            color: #ffc66d;
+        }
+
+        .status.picked {
+            background: rgba(100,170,255,.12);
+            color: #91c7ff;
+        }
+
+        .status.transit {
+            background: rgba(180,130,255,.12);
+            color: #c9a8ff;
+        }
+
+        .status.delivered {
+            background: rgba(72,255,173,.12);
+            color: #48ffad;
+        }
+
+        .detail {
+            padding: 13px 0;
+            border-top: 1px solid rgba(255,255,255,.07);
+        }
+
+        .detail-label {
+            color: #87a394;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+
+        .detail-value {
+            color: #e1f4e9;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-wrap: anywhere;
+        }
+
+        .detail-value a {
+            color: #48ffad;
+            text-decoration: none;
+        }
+
+        .detail-value a:hover {
+            text-decoration: underline;
+        }
+
+        .action-area {
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255,255,255,.07);
+        }
+
+        .update-btn {
+            width: 100%;
+            padding: 13px;
+            background: #48ffad;
+            color: #06110d;
+            border: none;
+            border-radius: 9px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .update-btn:hover {
+            background: #aaffd1;
+        }
+
+        .completed-message {
+            color: #48ffad;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+            padding: 12px;
+            background: rgba(72,255,173,.08);
+            border-radius: 9px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 65px 20px;
+            color: #87a394;
+            background: rgba(14,35,25,.8);
+            border: 1px solid rgba(255,255,255,.09);
+            border-radius: 16px;
+        }
+
+        .empty-icon {
+            font-size: 42px;
+            margin-bottom: 15px;
+        }
+
+        .flash {
+            padding: 13px;
+            border-radius: 9px;
+            margin-bottom: 15px;
+            background: rgba(72,255,173,.1);
+            color: #aaffd1;
+        }
+
+        .flash.error {
+            background: rgba(255,75,75,.1);
+            color: #ffb6b6;
+        }
+
+        /* Delivery map */
+
+        .map-section {
+            margin: 30px 0;
+            padding: 22px;
+            border: 1px solid rgba(72,255,173,.16);
+            border-radius: 16px;
+            background: rgba(14,35,25,.8);
+        }
+
+        .map-heading {
+            margin: 0 0 8px;
+            font-size: 19px;
+        }
+
+        .map-description {
+            color: #87a394;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 18px;
+        }
+
+        #deliveryMap {
+            width: 100%;
+            height: 400px;
+            border-radius: 12px;
+            border: 1px solid rgba(72,255,173,.2);
+            background: #10251b;
+            z-index: 1;
+        }
+
+        .map-empty {
+            display: none;
+            padding: 15px;
+            margin-top: 12px;
+            border-radius: 9px;
+            background: rgba(72,255,173,.06);
+            color: #a8c3b3;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .map-popup-title {
+            color: #16a765;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .directions-link {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 8px 11px;
+            border-radius: 7px;
+            background: #16a765;
+            color: white !important;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .directions-link:hover {
+            background: #0b8550;
+        }
+
+        .map-directions {
+            display: inline-block;
+            margin-top: 9px;
+            padding: 9px 13px;
+            border-radius: 8px;
+            background: rgba(72,255,173,.1);
+            border: 1px solid rgba(72,255,173,.25);
+            color: #48ffad;
+            font-size: 12px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .map-directions:hover {
+            background: rgba(72,255,173,.18);
+        }
+
+        .leaflet-popup-content-wrapper,
+        .leaflet-popup-tip {
+            background: #10251b;
+            color: #e8f5ed;
+        }
+
+        .leaflet-popup-content {
+            line-height: 1.6;
+        }
+
+        @media(max-width:1050px) {
+            .delivery-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media(max-width:850px) {
+            .stats {
+                grid-template-columns: repeat(2,1fr);
+            }
+        }
+
+        @media(max-width:650px) {
+            .sidebar {
+                width: 75px;
+                padding: 20px 9px;
+            }
+
+            .brand {
+                font-size: 0;
+            }
+
+            .brand:first-letter {
+                font-size: 22px;
+            }
+
+            .nav-label,
+            .nav-link span {
+                display: none;
+            }
+
+            .nav-link {
+                text-align: center;
+            }
+
+            .main {
+                padding: 22px 14px;
+            }
+
+            h1 {
+                font-size: 23px;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .map-section {
+                padding: 14px;
+            }
+
+            #deliveryMap {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="layout">
+
+    <aside class="sidebar">
+
+        <div class="brand">♻ FoodRescue AI</div>
+
+        <div class="nav-label">WORKSPACE</div>
+
+        <a class="nav-link" href="{{ url_for('dashboard') }}">
+            ▦ <span>Overview</span>
+        </a>
+
+        <a class="nav-link active" href="{{ url_for('my_deliveries') }}">
+            ◷ <span>My Deliveries</span>
+        </a>
+
+        <div class="sidebar-bottom">
+
+            <div class="nav-label">ACCOUNT</div>
+
+            <a class="nav-link" href="{{ url_for('auth.logout') }}">
+                ↪ <span>Sign Out</span>
+            </a>
+
+        </div>
+
+    </aside>
+
+    <main class="main">
+
+        <header class="topbar">
+
+            <h1>My Deliveries</h1>
+
+            <div class="muted">
+                Manage your assigned food deliveries and update their progress.
+            </div>
+
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="flash {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endwith %}
+
+
+        <!-- Statistics -->
+
+        <section class="stats">
+
+            <div class="card">
+                <div class="muted">TOTAL DELIVERIES</div>
+                <div class="stat-value">{{ total_deliveries }}</div>
+                <div class="muted">All assigned deliveries</div>
+            </div>
+
+            <div class="card">
+                <div class="muted">IN PROGRESS</div>
+                <div class="stat-value">{{ pending_deliveries }}</div>
+                <div class="muted">Deliveries awaiting completion</div>
+            </div>
+
+            <div class="card">
+                <div class="muted">COMPLETED</div>
+                <div class="stat-value">{{ completed_deliveries }}</div>
+                <div class="muted">Successfully delivered</div>
+            </div>
+
+        </section>
+
+
+        <!-- Delivery tracking map -->
+
+        {% if deliveries %}
+
+            <section class="map-section">
+
+                <h2 class="map-heading">
+                    📍 Delivery Pickup Locations
+                </h2>
+
+                <p class="map-description">
+                    View the pickup locations of your assigned deliveries.
+                    Select a marker to see donation details and open directions.
+                </p>
+
+                <div id="deliveryMap"></div>
+
+                <div id="deliveryMapEmpty" class="map-empty">
+                    No delivery pickup GPS coordinates are available.
+                    Ask donors to add pickup coordinates when creating donations.
+                </div>
+
+            </section>
+
+            {% for delivery in deliveries %}
+
+                {% set donation = delivery.donation %}
+
+                {% if donation and donation.latitude is not none and donation.longitude is not none %}
+
+                    <div
+                        class="map-delivery"
+                        data-name="{{ donation.food_name }}"
+                        data-category="{{ donation.food_category or 'Other' }}"
+                        data-quantity="{{ donation.quantity_kg }}"
+                        data-address="{{ donation.address or 'Address not provided' }}"
+                        data-status="{{ delivery.status }}"
+                        data-delivery-id="{{ delivery.id }}"
+                        data-latitude="{{ donation.latitude }}"
+                        data-longitude="{{ donation.longitude }}"
+                    ></div>
+
+                {% endif %}
+
+            {% endfor %}
+
+        {% endif %}
+
+
+        <h2 class="section-title">Assigned delivery tasks</h2>
+
+        {% if deliveries %}
+
+            <div class="delivery-grid">
+
+                {% for delivery in deliveries %}
+
+                    {% set donation = delivery.donation %}
+
+                    {% if donation %}
+
+                        <div class="delivery-card">
+
+                            <div class="delivery-header">
+
+                                <div>
+                                    <div class="food-name">
+                                        {{ donation.food_name }}
+                                    </div>
+
+                                    <div class="muted">
+                                        Delivery #{{ delivery.id }}
+                                    </div>
+                                </div>
+
+                                {% if delivery.status == "Assigned" %}
+                                    <span class="status assigned">ASSIGNED</span>
+                                {% elif delivery.status == "Picked Up" %}
+                                    <span class="status picked">PICKED UP</span>
+                                {% elif delivery.status == "In Transit" %}
+                                    <span class="status transit">IN TRANSIT</span>
+                                {% elif delivery.status == "Delivered" %}
+                                    <span class="status delivered">DELIVERED</span>
+                                {% else %}
+                                    <span class="status assigned">
+                                        {{ delivery.status|upper }}
+                                    </span>
+                                {% endif %}
+
+                            </div>
+
+
+                            <div class="detail">
+                                <div class="detail-label">FOOD CATEGORY</div>
+                                <div class="detail-value">
+                                    {{ donation.food_category or 'Other' }}
+                                </div>
+                            </div>
+
+
+                            <div class="detail">
+                                <div class="detail-label">FOOD QUANTITY</div>
+                                <div class="detail-value">
+                                    {{ donation.quantity_kg }} kg
+                                </div>
+                            </div>
+
+
+                            <div class="detail">
+                                <div class="detail-label">PICKUP ADDRESS</div>
+
+                                <div class="detail-value">
+                                    {{ donation.address or 'Not provided' }}
+                                </div>
+
+                                {% if donation.latitude is not none and donation.longitude is not none %}
+
+                                    <a
+                                        class="map-directions"
+                                        href="https://www.google.com/maps/dir/?api=1&destination={{ donation.latitude }},{{ donation.longitude }}"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        Open Pickup Directions ↗
+                                    </a>
+
+                                {% else %}
+
+                                    <div class="muted" style="margin-top:8px;">
+                                        GPS coordinates unavailable
+                                    </div>
+
+                                {% endif %}
+                            </div>
+
+
+                            <div class="detail">
+                                <div class="detail-label">DONOR</div>
+
+                                <div class="detail-value">
+                                    {{ donation.donor.name if donation.donor else 'Not available' }}
+                                    <br>
+
+                                    {% if donation.donor %}
+                                        <a href="mailto:{{ donation.donor.email }}">
+                                            {{ donation.donor.email }}
+                                        </a>
+                                        <br>
+                                        Phone: {{ donation.donor.phone or 'Not provided' }}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+
+                            <div class="detail">
+                                <div class="detail-label">RECEIVING NGO</div>
+
+                                <div class="detail-value">
+                                    {{ delivery.receiver.name if delivery.receiver else 'Not available' }}
+                                    <br>
+
+                                    {% if delivery.receiver %}
+                                        <a href="mailto:{{ delivery.receiver.email }}">
+                                            {{ delivery.receiver.email }}
+                                        </a>
+                                        <br>
+                                        Phone: {{ delivery.receiver.phone or 'Not provided' }}
+                                    {% endif %}
+                                </div>
+                            </div>
+
+
+                            <div class="detail">
+                                <div class="detail-label">FOOD EXPIRY</div>
+
+                                <div class="detail-value">
+                                    {{ donation.expiry_at.strftime('%d %b %Y, %I:%M %p') if donation.expiry_at else 'Not specified' }}
+                                </div>
+                            </div>
+
+
+                            <!-- DELIVERY STATUS ACTION -->
+
+                            <div class="action-area">
+
+                                {% if delivery.status == "Assigned" %}
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for('update_delivery_status', delivery_id=delivery.id) }}"
+                                    >
+
+                                        <input
+                                            type="hidden"
+                                            name="status"
+                                            value="Picked Up"
+                                        >
+
+                                        <button type="submit" class="update-btn">
+                                            Confirm Food Pickup →
+                                        </button>
+
+                                    </form>
+
+                                {% elif delivery.status == "Picked Up" %}
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for('update_delivery_status', delivery_id=delivery.id) }}"
+                                    >
+
+                                        <input
+                                            type="hidden"
+                                            name="status"
+                                            value="In Transit"
+                                        >
+
+                                        <button type="submit" class="update-btn">
+                                            Start Delivery →
+                                        </button>
+
+                                    </form>
+
+                                {% elif delivery.status == "In Transit" %}
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for('update_delivery_status', delivery_id=delivery.id) }}"
+                                    >
+
+                                        <input
+                                            type="hidden"
+                                            name="status"
+                                            value="Delivered"
+                                        >
+
+                                        <button type="submit" class="update-btn">
+                                            Confirm Delivery →
+                                        </button>
+
+                                    </form>
+
+                                {% elif delivery.status == "Delivered" %}
+
+                                    <div class="completed-message">
+                                        ✓ Delivery Successfully Completed
+                                    </div>
+
+                                {% else %}
+
+                                    <div class="muted">
+                                        Waiting for delivery assignment.
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+                        </div>
+
+                    {% endif %}
+
+                {% endfor %}
+
+            </div>
+
+        {% else %}
+
+            <div class="empty">
+
+                <div class="empty-icon">🚚</div>
+
+                <strong>No deliveries assigned yet</strong>
+
+                <p>
+                    When the administrator assigns a delivery to you,
+                    it will appear here.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </main>
+
+</div>
+
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+
+    const mapElement = document.getElementById("deliveryMap");
+
+    const mapEmpty = document.getElementById("deliveryMapEmpty");
+
+    if (mapElement && typeof L !== "undefined") {
+
+        const deliveryMap = L.map("deliveryMap", {
+            scrollWheelZoom: true
+        }).setView([20, 0], 2);
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }
+        ).addTo(deliveryMap);
+
+        const deliveryElements =
+            document.querySelectorAll(".map-delivery");
+
+        const markerLocations = [];
+
+        deliveryElements.forEach(function(item) {
+
+            const latitude = Number(item.dataset.latitude);
+
+            const longitude = Number(item.dataset.longitude);
+
+            if (
+                !Number.isFinite(latitude) ||
+                !Number.isFinite(longitude) ||
+                latitude < -90 ||
+                latitude > 90 ||
+                longitude < -180 ||
+                longitude > 180
+            ) {
+                return;
+            }
+
+            const marker = L.marker([
+                latitude,
+                longitude
+            ]).addTo(deliveryMap);
+
+            // Create popup safely
+            const popup = document.createElement("div");
+
+            const title = document.createElement("div");
+            title.className = "map-popup-title";
+            title.textContent =
+                item.dataset.name || "Food Donation";
+
+            const category = document.createElement("div");
+            category.textContent =
+                "Category: " + item.dataset.category;
+
+            const quantity = document.createElement("div");
+            quantity.textContent =
+                "Quantity: " + item.dataset.quantity + " kg";
+
+            const address = document.createElement("div");
+            address.textContent =
+                "Pickup: " + item.dataset.address;
+
+            const status = document.createElement("div");
+            status.textContent =
+                "Delivery Status: " + item.dataset.status;
+
+            const directions = document.createElement("a");
+
+            directions.className = "directions-link";
+
+            directions.textContent = "Open Google Maps Directions ↗";
+
+            directions.href =
+                "https://www.google.com/maps/dir/?api=1&destination=" +
+                encodeURIComponent(latitude + "," + longitude);
+
+            directions.target = "_blank";
+            directions.rel = "noopener noreferrer";
+
+            popup.appendChild(title);
+            popup.appendChild(category);
+            popup.appendChild(quantity);
+            popup.appendChild(address);
+            popup.appendChild(status);
+            popup.appendChild(directions);
+
+            marker.bindPopup(popup);
+
+            markerLocations.push([
+                latitude,
+                longitude
+            ]);
+
+        });
+
+        if (markerLocations.length > 0) {
+
+            deliveryMap.fitBounds(markerLocations, {
+                padding: [35, 35],
+                maxZoom: 13
+            });
+
+        } else if (mapEmpty) {
+
+            mapEmpty.style.display = "block";
+
+        }
+
+        setTimeout(function() {
+            deliveryMap.invalidateSize();
+        }, 250);
+
+    } else if (mapElement && mapEmpty) {
+
+        mapEmpty.style.display = "block";
+
+        mapEmpty.textContent =
+            "The map could not be loaded. Check your internet connection.";
+
+    }
+
+</script>
+
+</body>
+</html>
