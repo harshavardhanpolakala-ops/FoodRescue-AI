@@ -827,7 +827,6 @@ def admin_assign_delivery(delivery_id):
 
         db.session.commit()
 
-        # In-app notification for the NGO
         if ngo:
 
             create_notification(
@@ -842,7 +841,6 @@ def admin_assign_delivery(delivery_id):
                 donation_id=donation.id if donation else None
             )
 
-        # In-app notification for the delivery partner
         create_notification(
             user_id=partner.id,
             title="New Delivery Assigned",
@@ -1437,7 +1435,6 @@ def claim_donation(donation_id):
         db.session.add(claim)
         db.session.commit()
 
-        # In-app notification for donor
         if donor:
 
             create_notification(
@@ -1452,7 +1449,6 @@ def claim_donation(donation_id):
                 donation_id=donation_record.id
             )
 
-        # In-app notification for NGO
         create_notification(
             user_id=current_user.id,
             title="Donation Claim Successful!",
@@ -1631,7 +1627,6 @@ def request_delivery(donation_id):
         db.session.add(delivery)
         db.session.commit()
 
-        # In-app notification for donor
         donor = donation.donor
 
         if donor:
@@ -1648,7 +1643,6 @@ def request_delivery(donation_id):
                 donation_id=donation.id
             )
 
-        # In-app notification for NGO
         create_notification(
             user_id=current_user.id,
             title="Delivery Request Submitted",
@@ -1660,7 +1654,6 @@ def request_delivery(donation_id):
             donation_id=donation.id
         )
 
-        # In-app notifications for administrators
         administrators = User.query.filter_by(
             role="Admin",
             is_active=True
@@ -1680,7 +1673,6 @@ def request_delivery(donation_id):
                 donation_id=donation.id
             )
 
-        # Email notification for donor
         if donor and donor.email:
 
             send_notification_email(
@@ -1704,7 +1696,6 @@ def request_delivery(donation_id):
                 )
             )
 
-        # Email notifications for active administrators
         notified_emails = set()
 
         if donor and donor.email:
@@ -1872,7 +1863,6 @@ def update_delivery_status(delivery_id):
 
         db.session.commit()
 
-        # In-app notifications for donor and NGO
         if donation:
 
             notification_title = (
@@ -1905,7 +1895,6 @@ def update_delivery_status(delivery_id):
                         donation_id=donation.id
                     )
 
-        # Existing email notifications
         if donation:
 
             if new_status == "Delivered":
@@ -2368,14 +2357,19 @@ def migrate_food_donations_table():
 # APPLICATION START
 # ==================================================
 
+# IMPORTANT:
+# This runs when the application is imported by Gunicorn
+# on Render, so the database tables are created there too.
+
+with app.app_context():
+
+    db.create_all()
+
+    migrate_user_table()
+    migrate_delivery_table()
+    migrate_food_donations_table()
+
+
 if __name__ == "__main__":
-
-    with app.app_context():
-
-        db.create_all()
-
-        migrate_user_table()
-        migrate_delivery_table()
-        migrate_food_donations_table()
 
     app.run(debug=True)
