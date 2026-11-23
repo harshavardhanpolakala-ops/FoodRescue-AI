@@ -1,10 +1,12 @@
 
+import os
 import re
+import json
 import secrets
-import smtplib
+import urllib.request
+import urllib.error
 
 from datetime import datetime, timedelta
-from email.message import EmailMessage
 
 from flask import (
     Blueprint, render_template, request,
@@ -36,49 +38,70 @@ def is_valid_email(email):
 
 
 # --------------------------------------------------
-# SEND OTP EMAIL
+# SEND OTP USING BREVO API
 # --------------------------------------------------
 
 def send_otp_email(email, otp):
 
-    message = EmailMessage()
+    api_key = os.environ.get("BREVO_API_KEY")
 
-    message["Subject"] = "FoodRescue AI - Email Verification"
-    message["From"] = current_app.config["MAIL_DEFAULT_SENDER"]
-    message["To"] = email
+    if not api_key:
+        raise RuntimeError("BREVO_API_KEY is not configured.")
 
-    message.set_content(
-        f"""
-Hello!
+    sender_email = "harshavardhanpolakala@gmail.com"
 
-Thank you for registering with FoodRescue AI.
+    payload = {
+        "sender": {
+            "name": "FoodRescue AI",
+            "email": sender_email
+        },
+        "to": [
+            {
+                "email": email
+            }
+        ],
+        "subject": "FoodRescue AI - Email Verification",
+        "textContent": (
+            "Hello!\n\n"
+            "Thank you for registering with FoodRescue AI.\n\n"
+            f"Your email verification code is: {otp}\n\n"
+            "This code expires in 5 minutes.\n\n"
+            "If you did not request this verification, please ignore this email.\n\n"
+            "Regards,\n"
+            "FoodRescue AI Team"
+        )
+    }
 
-Your email verification code is:
+    data = json.dumps(payload).encode("utf-8")
 
-{otp}
-
-This code expires in 5 minutes.
-
-If you did not request this verification, please ignore this email.
-
-Regards,
-FoodRescue AI Team
-"""
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=data,
+        headers={
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json"
+        },
+        method="POST"
     )
 
-    with smtplib.SMTP(
-        current_app.config["MAIL_SERVER"],
-        current_app.config["MAIL_PORT"]
-    ) as server:
+    try:
+        with urllib.request.urlopen(req, timeout=15) as response:
+            if response.status not in (200, 201):
+                raise RuntimeError(
+                    f"Brevo returned status {response.status}"
+                )
 
-        server.starttls()
+            print("OTP email accepted by Brevo.")
 
-        server.login(
-            current_app.config["MAIL_USERNAME"],
-            current_app.config["MAIL_PASSWORD"]
-        )
+    except urllib.error.HTTPError as error:
+        details = error.read().decode("utf-8", errors="replace")
+        print("BREVO API ERROR:", error.code, details)
+        raise RuntimeError("Brevo could not send the verification email.")
 
-        server.send_message(message)
+    except urllib.error.URLError as error:
+        print("BREVO CONNECTION ERROR:", error)
+        raise RuntimeError("Could not connect to Brevo.")
 
 
 # --------------------------------------------------
@@ -178,7 +201,7 @@ def register():
             db.session.commit()
 
             flash(
-                "Unable to send verification email. Please check the email settings and try again.",
+                "Unable to send verification email. Please try again.",
                 "error"
             )
 
@@ -350,7 +373,6 @@ def login():
 
         if user and check_password_hash(user.password_hash, password):
 
-            # SECURITY: Reject deactivated accounts
             if not user.is_active:
 
                 flash(
